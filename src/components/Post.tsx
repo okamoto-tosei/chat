@@ -24,7 +24,61 @@ type PropsType = {
   username: string;
 };
 
+type CommentType = {
+  id: string;
+  avatar: string;
+  text: string;
+  timestamp: any;
+  username: string;
+};
+
 const Post: React.FC<PropsType> = (props) => {
+  const user = useSelector(selectUser);
+  const [comment, setComment] = useState('');
+  const [comments, setComments] = useState<CommentType>([
+    {
+      id: '',
+      avatar: '',
+      text: '',
+      timestamp: null,
+      username: '',
+    },
+  ]);
+
+  useEffect(() => {
+    const unSub = db
+      .collection('posts')
+      .doc(props.postId)
+      .collection('comments')
+      .orderBy('timestamp', 'desc')
+      .onSnapshot((snapshot) => {
+        setComments(
+          snapshot.docs.map((value) => {
+            return {
+              id: value.id,
+              avatar: value.data().avatar,
+              text: value.data().text,
+              username: value.data().username,
+              timestamp: value.data().timestamp,
+            };
+          })
+        );
+      });
+    return () => {
+      unSub();
+    };
+  }, [props.postId]);
+
+  const newComment = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    db.collection('posts').doc(props.postId).collection('comments').add({
+      avatar: user.photoUrl,
+      text: comment,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      username: user.displayName,
+    });
+    setComment('');
+  };
   return (
     <div className={style.post}>
       <div className={style.post_avatar}>
@@ -36,7 +90,7 @@ const Post: React.FC<PropsType> = (props) => {
             <h3>
               <span className={style.post_headerUser}>@{props.username}</span>
               <span className={style.post_headerTime}>
-                {new Date(props.timestamp.toDate()).toLocaleString()}
+                {new Date(props?.timestamp?.toDate()).toLocaleString()}
               </span>
             </h3>
           </div>
@@ -49,6 +103,39 @@ const Post: React.FC<PropsType> = (props) => {
             <img src={props.image} alt="tweet" />
           </div>
         )}
+
+        {comments.map((value) => {
+          return (
+            <div key={value.id} className={style.post_comment}>
+              <Avatar src={value.avatar} />
+
+              <span className={style.post_commentUser}>@{value.username}</span>
+              <span className={style.post_commentText}>{value.text}</span>
+              <span className={style.post_headerTime}>
+                {new Date(value.timestamp?.toDate()).toLocaleString()}
+              </span>
+            </div>
+          );
+        })}
+
+        <form onSubmit={newComment}>
+          <div className={style.post_form}>
+            <input
+              className={style.post_input}
+              type="text"
+              placeholder="Type new comment..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <button
+              disabled={!comment}
+              type="submit"
+              className={comment ? style.post_button : style.post_buttonDisable}
+            >
+              <SendIcon className={style.post_sendIcon} />
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
