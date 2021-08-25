@@ -32,7 +32,18 @@ type CommentType = {
   username: string;
 };
 
+const useStyles = makeStyles((theme) => {
+  return {
+    small: {
+      width: theme.spacing(3),
+      height: theme.spacing(3),
+      marginRight: theme.spacing(1),
+    },
+  };
+});
+
 const Post: React.FC<PropsType> = (props) => {
+  const classes = useStyles();
   const user = useSelector(selectUser);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState<CommentType>([
@@ -44,6 +55,8 @@ const Post: React.FC<PropsType> = (props) => {
       username: '',
     },
   ]);
+
+  const [openComments, setOpenComments] = useState(false);
 
   useEffect(() => {
     const unSub = db
@@ -104,38 +117,50 @@ const Post: React.FC<PropsType> = (props) => {
           </div>
         )}
 
-        {comments.map((value) => {
-          return (
-            <div key={value.id} className={style.post_comment}>
-              <Avatar src={value.avatar} />
+        <MessageIcon
+          className={style.post_commentIcon}
+          onClick={() => setOpenComments(!openComments)}
+        />
+        {openComments && (
+          <>
+            {comments.map((value) => {
+              return (
+                <div key={value.id} className={style.post_comment}>
+                  <Avatar src={value.avatar} className={classes.small} />
 
-              <span className={style.post_commentUser}>@{value.username}</span>
-              <span className={style.post_commentText}>{value.text}</span>
-              <span className={style.post_headerTime}>
-                {new Date(value.timestamp?.toDate()).toLocaleString()}
-              </span>
-            </div>
-          );
-        })}
+                  <span className={style.post_commentUser}>
+                    @{value.username}
+                  </span>
+                  <span className={style.post_commentText}>{value.text}</span>
+                  <span className={style.post_headerTime}>
+                    {new Date(value.timestamp?.toDate()).toLocaleString()}
+                  </span>
+                </div>
+              );
+            })}
 
-        <form onSubmit={newComment}>
-          <div className={style.post_form}>
-            <input
-              className={style.post_input}
-              type="text"
-              placeholder="Type new comment..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-            <button
-              disabled={!comment}
-              type="submit"
-              className={comment ? style.post_button : style.post_buttonDisable}
-            >
-              <SendIcon className={style.post_sendIcon} />
-            </button>
-          </div>
-        </form>
+            <form onSubmit={newComment}>
+              <div className={style.post_form}>
+                <input
+                  className={style.post_input}
+                  type="text"
+                  placeholder="Type new comment..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                />
+                <button
+                  disabled={!comment}
+                  type="submit"
+                  className={
+                    comment ? style.post_button : style.post_buttonDisable
+                  }
+                >
+                  <SendIcon className={style.post_sendIcon} />
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
